@@ -1,6 +1,9 @@
 import numpy as np
 import matplotlib
 import os
+import wx
+import mahotas as mh
+import logging
 
 matplotlib.use('WXAgg')
 
@@ -8,8 +11,30 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 from matplotlib.figure import Figure
 
-import wx
-
+class AOImage():
+    """AO Image data
+    Going to define this as a seperate class to hold all the image processing functions"""
+    orgImage = None
+    curImage = None
+    
+    def __init__(self,image=None):
+        if image is not None:
+            self.setOriginal(image)
+        
+    def getOriginal(self):
+        return self.orgImage
+    
+    def getCurrent(self):
+        #return the current image after any transformations have been applied
+        return self.curImage
+    
+    def setOriginal(self,image):
+        if not isinstance(image,np.ndarray):
+            logger.error("Invalid image type: %s supplied",type(image))
+            raise TypeError,"Invalid image supplied, expected ndarray"
+        self.orgImage = image
+        self.curImage = self.orgImage
+                
 class ControlPanel(wx.Panel):
     """A wx.panel to hold the main gui controls"""
     def __init__(self,parent):
@@ -44,19 +69,26 @@ class CanvasPanel(wx.Panel):
         self.SetSizer(self.sizer)
         self.Fit()
         
-    def draw(self):
-        """Put a basic sine wave on"""
-        t = np.arange(0.0,3.0,0.01)
-        s = np.sin(2 * np.pi * t)
-        self.axes.plot(t,s)
+    def draw(self,image=None):
+        """Draw an image onto the canvas"""
+        if image is None:
+            #Plot a simple numpy square is nothing is passed
+            self.axes.imshow(np.ones((5,5)))
+            return
+        self.axes.clear()
+        self.axes.imshow(image)
+        self.canvas.draw()
+        
 
 class MyFrame(wx.Frame):
     """This will be the main window"""
+    data=AOImage()
+    
     def __init__(self,parent,title):
         wx.Frame.__init__(self,parent,title=title,size=(800,600))
         self.image = CanvasPanel(self) # the canvas for image display
         self.controls = ControlPanel(self) # the control buttons
-        self.image.draw()
+
         
         self.CreateStatusBar() # A Statusbar in the bottom of the window
         
@@ -69,7 +101,7 @@ class MyFrame(wx.Frame):
         menuItem_exit = filemenu.Append(wx.ID_EXIT,"E&xit"," Terminate the program")
         
         
-        self.Bind(wx.EVT_MENU,self.OnOpen,menuItem_fileopen)
+        self.Bind(wx.EVT_MENU,self.onOpen,menuItem_fileopen)
         self.Bind(wx.EVT_MENU,self.onAbout,menuItem_about)
         self.Bind(wx.EVT_MENU,self.onExit,menuItem_exit)
         
@@ -89,7 +121,11 @@ class MyFrame(wx.Frame):
         self.sizer.Fit(self)
         
         self.Show(True)
-    
+        self.update_plot()
+        
+    def update_plot(self):
+        self.image.draw(self.data.getCurrent())
+        
     def onAbout(self, event):
         """callback for menuitem_about"""
         dlg = wx.MessageDialog( self, "A small app in wxPython", "ConeCounter", wx.OK)
@@ -100,19 +136,43 @@ class MyFrame(wx.Frame):
         """callback for menuitem_exit"""
         self.Close(True)
         
-    def OnOpen(self, event):
+    def onOpen(self, event):
         """ Open a file"""
         self.dirname = ''
         dlg = wx.FileDialog(self, "Choose a file", self.dirname, "", "*.*", wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.filename = dlg.GetFilename()
             self.dirname = dlg.GetDirectory()
-            f = open(os.path.join(self.dirname, self.filename), 'r')
+            #f = open(os.path.join(self.dirname, self.filename), 'r')
             #self.control.SetValue(f.read())
-            f.close()
-        dlg.Destroy()    
+            #f.close()
+        dlg.Destroy()
+        self.loadFrame(os.path.join(self.dirname,self.filename))
+        
+    def loadFrame(self, fname):
+        """Load a frame from a file"""
+        if not os.path.isfile(fname):
+            logger.error('Invalid filename: %s provided',fname)
+            raise IOError
+        
+        image = mh.imread(fname)
+        image = image[:,:,0]
+        if image.size == 1:
+            #There are problems with some greyscale png images
+            logger.error('Invalid image: %s provided: is it grayscale png?',fname)
+            raise TypeError,"Invalid image type"       
     
+        self.data.setOriginal(image)
+        self.update_plot()
+        
 if __name__ == '__main__':
+    logger = logging.getLogger(__name__)
+    formatter = logging.Formatter('%(levelname)s - %(message)s')
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)    
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+    logger.debug('XXXXXX')
     app = wx.App(False)
     frame = MyFrame(None,'ConeCounter')
     app.MainLoop()
