@@ -1,16 +1,10 @@
 import numpy as np
-import matplotlib
 import os
 import wx
 import logging
+
 import AOImage
-
-matplotlib.use('WXAgg')
-
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-from matplotlib.backends.backend_wx import NavigationToolbar2Wx
-from matplotlib.figure import Figure
-
+import CanvasPanel
        
 class ControlPanel(wx.Panel):
     """A wx.panel to hold the main gui controls"""
@@ -29,28 +23,7 @@ class ControlPanel(wx.Panel):
     def on_update_spin(self,event):
         event.Skip()
 
-class CanvasPanel(wx.Panel):
-    """This is a wx.panel that will hold a matplotlib canvas"""
-    def __init__(self,parent):
-        wx.Panel.__init__(self,parent)
-        self.figure = Figure()
-        self.axes = self.figure.add_subplot(111)
-        self.canvas = FigureCanvas(self, -1, self.figure)
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
-        self.SetSizer(self.sizer)
-        self.Fit()
-        
-    def draw(self,image=None):
-        """Draw an image onto the canvas"""
-        if image is None:
-            #Plot a simple numpy square is nothing is passed
-            self.axes.imshow(np.ones((5,5)))
-            return
-        self.axes.clear()
-        self.axes.imshow(image)
-        self.canvas.draw()
-        
+       
 class BoundSpinCtrl(wx.Panel):
     """A static text box with a spincontrol"""
     def __init__(self,parent,ID,name,minVal,maxVal,initVal):
@@ -88,7 +61,7 @@ class MyFrame(wx.Frame):
     
     def __init__(self,parent,title):
         wx.Frame.__init__(self,parent,title=title,size=(800,600))
-        self.image = CanvasPanel(self) # the canvas for image display
+        self.image = CanvasPanel.CanvasPanel(self) # the canvas for image display
         self.controls = ControlPanel(self) # the control buttons
 
         self.Bind(wx.EVT_SPINCTRL,self.on_update_spin)
