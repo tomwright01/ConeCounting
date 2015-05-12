@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib
 import os
 import wx
-import mahotas as mh
 import logging
+import AOImage
 
 matplotlib.use('WXAgg')
 
@@ -11,51 +11,23 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 from matplotlib.figure import Figure
 
-class AOImage():
-    """AO Image data
-    Going to define this as a seperate class to hold all the image processing functions"""
-    orgImage = None
-    curImage = None
-    
-    def __init__(self,image=None):
-        if image is not None:
-            self.setOriginal(image)
-        
-    def getOriginal(self):
-        return self.orgImage
-    
-    def getCurrent(self):
-        #return the current image after any transformations have been applied
-        return self.curImage
-    
-    def setOriginal(self,image):
-        if not isinstance(image,np.ndarray):
-            logger.error("Invalid image type: %s supplied",type(image))
-            raise TypeError,"Invalid image supplied, expected ndarray"
-        self.orgImage = image
-        self.curImage = self.orgImage
-                
+       
 class ControlPanel(wx.Panel):
     """A wx.panel to hold the main gui controls"""
     def __init__(self,parent):
         wx.Panel.__init__(self,parent)
+        self.controls = []
+
+        sizer=wx.GridBagSizer()
         
-        #add some buttons, they dont do anything yet
-        self.sizer = wx.GridBagSizer(vgap=5,hgap=5)
-        self.buttons = []
-        for i in range(0, 6):
-            self.buttons.append(wx.Button(self, -1, "Button &"+str(i)))
-            self.sizer.Add(self.buttons[i], pos=(i,0))       
-
-        self.labels = []
-        for i in range(0, 6):
-            self.labels.append(wx.StaticText(self, label="Label &"+str(i)))
-            self.sizer.Add(self.labels[i], pos=(i,1))        
-
+        self.flt = BoundSpinCtrl(self,-1,'Filter',0,10,0)
+        self.Bind(wx.EVT_SPINCTRL,self.on_update_spin)
+        sizer.Add(self.flt, pos=(0,0))
             
-        self.SetSizer(self.sizer)
-        self.SetAutoLayout(1)
-        self.sizer.Fit(self)
+        self.SetSizer(sizer)
+    
+    def on_update_spin(self,event):
+        event.Skip()
 
 class CanvasPanel(wx.Panel):
     """This is a wx.panel that will hold a matplotlib canvas"""
@@ -79,16 +51,47 @@ class CanvasPanel(wx.Panel):
         self.axes.imshow(image)
         self.canvas.draw()
         
-
+class BoundSpinCtrl(wx.Panel):
+    """A static text box with a spincontrol"""
+    def __init__(self,parent,ID,name,minVal,maxVal,initVal):
+        wx.Panel.__init__(self,parent,ID)
+        self.value = initVal
+        self.name = name
+        
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        label = wx.StaticText(self,label=name)
+        self.sc = wx.SpinCtrl(self,value=str(initVal))
+        self.sc.SetRange(minVal,maxVal)
+        self.Bind(wx.EVT_SPINCTRL,self.on_update_spin)
+        
+        sizer.Add(label)
+        sizer.Add(self.sc)
+        
+        self.SetSizer(sizer)
+        #sizer.Fit(self)
+        
+    def on_update_spin(self,event):
+        self.value = self.sc.GetValue()
+        event.SetEventObject(self) #Change the originating object to be the boundCtrl
+        #logger.debug('Caught spin event at bound control')
+        event.Skip()
+        
+    def getValue(self):
+        return self.value
+    
+    def getName(self):
+        return self.name
+    
 class MyFrame(wx.Frame):
     """This will be the main window"""
-    data=AOImage()
+    data=AOImage.AOImage()
     
     def __init__(self,parent,title):
         wx.Frame.__init__(self,parent,title=title,size=(800,600))
         self.image = CanvasPanel(self) # the canvas for image display
         self.controls = ControlPanel(self) # the control buttons
 
+        self.Bind(wx.EVT_SPINCTRL,self.on_update_spin)
         
         self.CreateStatusBar() # A Statusbar in the bottom of the window
         
@@ -112,15 +115,25 @@ class MyFrame(wx.Frame):
         
         #setup the layout
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizer.Add(self.image, 2, wx.EXPAND)
-        self.sizer.Add(self.controls, 1, wx.EXPAND)
+        self.sizer.Add(self.image, proportion=2, flag=wx.EXPAND, border=1)
+        self.sizer.Add(self.controls, proportion=1, flag=wx.EXPAND|wx.ALL, border=5)
         
         #Layout sizers
         self.SetSizer(self.sizer)
-        self.SetAutoLayout(1)
+        #self.SetAutoLayout(1)
         self.sizer.Fit(self)
         
         self.Show(True)
+        self.update_plot()
+        
+    def on_update_spin(self,event):
+        logger.debug('Caught spin event at main panel, with value %s',event.GetEventObject().getName())
+        srcObj = event.GetEventObject()
+        if srcObj.getName() == 'Filter':
+            self.data.setFilter(srcObj.getValue())
+        else:
+            logger.warning('Unhandled event')
+            
         self.update_plot()
         
     def update_plot(self):
@@ -147,23 +160,9 @@ class MyFrame(wx.Frame):
             #self.control.SetValue(f.read())
             #f.close()
         dlg.Destroy()
-        self.loadFrame(os.path.join(self.dirname,self.filename))
-        
-    def loadFrame(self, fname):
-        """Load a frame from a file"""
-        if not os.path.isfile(fname):
-            logger.error('Invalid filename: %s provided',fname)
-            raise IOError
-        
-        image = mh.imread(fname)
-        image = image[:,:,0]
-        if image.size == 1:
-            #There are problems with some greyscale png images
-            logger.error('Invalid image: %s provided: is it grayscale png?',fname)
-            raise TypeError,"Invalid image type"       
-    
-        self.data.setOriginal(image)
+        self.data.loadFrame(os.path.join(self.dirname,self.filename))
         self.update_plot()
+        
         
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
