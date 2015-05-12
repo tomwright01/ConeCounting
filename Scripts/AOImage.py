@@ -1,7 +1,8 @@
+import logging
 import numpy as np
 import mahotas as mh
 import os
-
+logger = logging.getLogger(__name__)
 class AOImage():
     """AO Image data
     Going to define this as a seperate class to hold all the image processing functions

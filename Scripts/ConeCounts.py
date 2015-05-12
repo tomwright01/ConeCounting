@@ -138,7 +138,7 @@ class MyFrame(wx.Frame):
         
         
 if __name__ == '__main__':
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger('ConeCounter')
     formatter = logging.Formatter('%(levelname)s - %(message)s')
     handler = logging.StreamHandler()
     handler.setFormatter(formatter)    
