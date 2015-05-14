@@ -11,7 +11,8 @@ class AOImage():
 
     #Define a dictionary to hold the transform parameters
     params = {'threshold':None,
-              'filter':None}
+              'filter':None,
+              'regional_maxima':None}
     
     def __init__(self,image=None):
         if image is not None:
@@ -22,10 +23,17 @@ class AOImage():
     
     def getCurrent(self):
         #return the current image after any transformations have been applied
+        if self.orgImage is None:
+            #handle the case where an image hasn't been loaded.
+            return None
+        
         curImage = self.orgImage
+        
         if self.params['filter'] > 0:
             curImage = self.filterImage(curImage,self.params['filter'])
         
+        self.params['threshold'] = self.thresholdImage(curImage)
+        self.params['regional_maxima'] = mh.regmax(curImage)
         return curImage
     
     def setOriginal(self,image):
@@ -36,7 +44,7 @@ class AOImage():
 
         
     def thresholdImage(self,image):
-        self.params['threshold'] = mh.thresholding.otsu(image)
+        self.params['threshold'] = mh.thresholding.otsu(np.uint8(image))
         
     def filterImage(self,image,sd):
         return mh.gaussian_filter(image,sd)

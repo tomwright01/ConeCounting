@@ -5,64 +5,23 @@ import logging
 
 import AOImage
 import CanvasPanel
-       
-class ControlPanel(wx.Panel):
-    """A wx.panel to hold the main gui controls"""
-    def __init__(self,parent):
-        wx.Panel.__init__(self,parent)
-        self.controls = []
-
-        sizer=wx.GridBagSizer()
-        
-        self.flt = BoundSpinCtrl(self,-1,'Filter',0,10,0)
-        self.Bind(wx.EVT_SPINCTRL,self.on_update_spin)
-        sizer.Add(self.flt, pos=(0,0))
-            
-        self.SetSizer(sizer)
-    
-    def on_update_spin(self,event):
-        event.Skip()
-
-       
-class BoundSpinCtrl(wx.Panel):
-    """A static text box with a spincontrol"""
-    def __init__(self,parent,ID,name,minVal,maxVal,initVal):
-        wx.Panel.__init__(self,parent,ID)
-        self.value = initVal
-        self.name = name
-        
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        label = wx.StaticText(self,label=name)
-        self.sc = wx.SpinCtrl(self,value=str(initVal))
-        self.sc.SetRange(minVal,maxVal)
-        self.Bind(wx.EVT_SPINCTRL,self.on_update_spin)
-        
-        sizer.Add(label)
-        sizer.Add(self.sc)
-        
-        self.SetSizer(sizer)
-        #sizer.Fit(self)
-        
-    def on_update_spin(self,event):
-        self.value = self.sc.GetValue()
-        event.SetEventObject(self) #Change the originating object to be the boundCtrl
-        #logger.debug('Caught spin event at bound control')
-        event.Skip()
-        
-    def getValue(self):
-        return self.value
-    
-    def getName(self):
-        return self.name
-    
+import DisplayObjects
+                
 class MyFrame(wx.Frame):
-    """This will be the main window"""
+    """This will be the main window
+    Subpanels that are children of this frame are expected to have a function
+    registerControls that returns a dict containing all the important controls with their current state"""
     data=AOImage.AOImage()
+    controls = dict() #A dictionary to register controls from all the subpanels
     
     def __init__(self,parent,title):
         wx.Frame.__init__(self,parent,title=title,size=(800,600))
         self.image = CanvasPanel.CanvasPanel(self) # the canvas for image display
-        self.controls = ControlPanel(self) # the control buttons
+       
+        pnlControls = wx.Panel(self)       
+        
+        controls = DisplayObjects.ControlPanel(pnlControls,'ProcessingControls') # the control buttons
+        displayControls = DisplayObjects.DisplayPanel(pnlControls,'DisplayControls')
 
         self.Bind(wx.EVT_SPINCTRL,self.on_update_spin)
         
@@ -87,17 +46,27 @@ class MyFrame(wx.Frame):
         self.SetMenuBar(menuBar)
         
         #setup the layout
+        #create an panel to hold the control dialogs
+         
+        pnlControls_sizer = wx.BoxSizer(wx.VERTICAL)
+        pnlControls_sizer.Add(controls,flag=wx.EXPAND)
+        pnlControls_sizer.Add(displayControls,flag=wx.EXPAND)
+        pnlControls.SetSizer(pnlControls_sizer)
+        
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(self.image, proportion=2, flag=wx.EXPAND, border=1)
-        self.sizer.Add(self.controls, proportion=1, flag=wx.EXPAND|wx.ALL, border=5)
+        self.sizer.Add(pnlControls, proportion=1, flag=wx.EXPAND, border=5)
         
         #Layout sizers
         self.SetSizer(self.sizer)
         #self.SetAutoLayout(1)
-        self.sizer.Fit(self)
+        #self.sizer.Fit(self)
         
         self.Show(True)
         self.update_plot()
+
+    def registerControl(self,myControls):
+        pass
         
     def on_update_spin(self,event):
         logger.debug('Caught spin event at main panel, with value %s',event.GetEventObject().getName())
