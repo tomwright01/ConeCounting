@@ -54,6 +54,10 @@ class CanvasPanel(wx.Panel):
             self.axes.axis(self.axis_limits)
         self.canvas.draw()
 
+    def overlayImage(self,image):
+        self.axes.imshow(image)
+        self.canvas.draw()
+
     def getAxesLimits(self):
         """Get the current limits of the axes"""
 

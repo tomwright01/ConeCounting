@@ -8,9 +8,15 @@ import CanvasPanel
 import DisplayObjects
                 
 class MyFrame(wx.Frame):
-    """This will be the main window
-    Subpanels that are children of this frame are expected to have a function
-    registerControls that returns a dict containing all the important controls with their current state"""
+    """This will be the main window, Subpanels that are children of this frame
+    are expected to have a function registerControls that returns a dict
+    containing all the important controls with their current state.
+    Subpanels with controls that affect the image display should be based on the
+    GenericControlPanel class this converts events from the widgets to the
+    generic type EVT_STATE_CHANGE, controls registered in self.controls are
+    then automatically updated
+    
+    """
     data=AOImage.AOImage()
     controls = dict() #A dictionary to register controls from all the subpanels
     
@@ -22,9 +28,10 @@ class MyFrame(wx.Frame):
         
         controls = DisplayObjects.ControlPanel(pnlControls,'ProcessingControls') # the control buttons
         displayControls = DisplayObjects.DisplayPanel(pnlControls,'DisplayControls')
-
-        self.Bind(wx.EVT_SPINCTRL,self.on_update_spin)
+        self.registerControl('DisplayControls',displayControls.registerControls())
         
+        self.Bind(wx.EVT_SPINCTRL,self.on_update_spin)
+        displayControls.Bind(DisplayObjects.GenericControlPanel.EVT_STATE_CHANGE,self.on_control_change)
         self.CreateStatusBar() # A Statusbar in the bottom of the window
         
         # Setting up the menu
@@ -64,9 +71,18 @@ class MyFrame(wx.Frame):
         
         self.Show(True)
         self.update_plot()
-
-    def registerControl(self,myControls):
-        pass
+        
+    def on_control_change(self,evt):
+        #catches a EVT_STATE_CHANGE and updates the controls dictionary with info from the event
+        logger.debug('Event Caught %s',evt.pnlName + '.' + evt.src)
+        self.controls[evt.pnlName + '.' + evt.src] = evt.value
+        self.update_plot()
+        
+    def registerControl(self,control,myControls):
+        """take the name of a subpanel and a list of controls in that panel
+        updates self.controls dictionary"""
+        for key in myControls.keys():
+            self.controls[control + '.' + key] = myControls[key]
         
     def on_update_spin(self,event):
         logger.debug('Caught spin event at main panel, with value %s',event.GetEventObject().getName())
@@ -80,6 +96,8 @@ class MyFrame(wx.Frame):
         
     def update_plot(self):
         self.image.draw(self.data.getCurrent())
+        if self.controls['DisplayControls.chkb_show_overlay']:
+            self.image.overlayImage(self.data.getMaximaImage())
         
     def onAbout(self, event):
         """callback for menuitem_about"""
@@ -108,7 +126,7 @@ class MyFrame(wx.Frame):
         
 if __name__ == '__main__':
     logger = logging.getLogger('ConeCounter')
-    formatter = logging.Formatter('%(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(module)s : %(levelname)s - %(message)s')
     handler = logging.StreamHandler()
     handler.setFormatter(formatter)    
     logger.addHandler(handler)

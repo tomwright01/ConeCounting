@@ -1,20 +1,18 @@
 import wx
 from GenericControlPanel import GenericControlPanel
+import logging
+logger = logging.getLogger('ConeCounter.DisplayObjects')
 
 class ControlPanel(GenericControlPanel):
     """A wx.panel to hold the main gui controls"""
     def __init__(self,parent,name):
         GenericControlPanel.__init__(self,parent,name)
-        self.controls = []
 
-        sizer=wx.GridBagSizer()
         
         flt = BoundSpinCtrl(self,-1,'Filter',0,10,0)
         self.Bind(wx.EVT_SPINCTRL,self.on_update_spin)
 
-        
-        
-        
+        sizer=wx.GridBagSizer()
         sizer.Add(flt, pos=(0,0))
         #sizer.Add(pnl_disp, pos=(1,0))
         
@@ -26,29 +24,25 @@ class ControlPanel(GenericControlPanel):
 class DisplayPanel(GenericControlPanel):
         """A panel containing controls for displaying the image
         """
-        myControls = {}
         def __init__(self,parent,name):
             GenericControlPanel.__init__(self,parent,name)
             sizer = wx.BoxSizer(wx.VERTICAL)
             
             chkb_show_overlay = wx.CheckBox(self,-1,'Show overlay',name='chkb_show_overlay')
-            self.Bind(wx.EVT_CHECKBOX,self.on_update_checkbox)
+            self.Bind(wx.EVT_CHECKBOX,self._stateChange)
+            self.Bind(GenericControlPanel.EVT_STATE_CHANGE,self.on_state_change)
             
             self._addControl(chkb_show_overlay)
             
             sizer.Add(chkb_show_overlay)
             self.SetSizer(sizer)
         
-        def _addControl(self,control):
-            self.myControls[control.Name]=control.GetValue()
-            
-        def registerControls(self,parent):
-            """Function to register controls with the parent
-            """
-            return myControls
-        
-        def on_update_checkbox(self,evt):
+        def on_state_change(self,event):
+            logger.debug('state change event detected')
+            event.Skip()
             pass
+        
+        
 class BoundSpinCtrl(wx.Panel):
     """A static text box with a spincontrol"""
     def __init__(self,parent,ID,name,minVal,maxVal,initVal):
