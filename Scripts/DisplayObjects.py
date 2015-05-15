@@ -29,11 +29,21 @@ class DisplayPanel(GenericControlPanel):
             sizer = wx.BoxSizer(wx.VERTICAL)
             
             chkb_show_overlay = wx.CheckBox(self,-1,'Show overlay',name='chkb_show_overlay')
+            cmb_select_base_image = wx.ComboBox(self,-1,value='Current',
+                                                choices=['Current','Original'],
+                                                style=wx.CB_READONLY,
+                                                name='cmb_select_base_image')
+            
+            
             self.Bind(wx.EVT_CHECKBOX,self._stateChange)
+            self.Bind(wx.EVT_COMBOBOX,self._stateChange)
+            
             self.Bind(GenericControlPanel.EVT_STATE_CHANGE,self.on_state_change)
             
             self._addControl(chkb_show_overlay)
+            self._addControl(cmb_select_base_image)
             
+            sizer.Add(cmb_select_base_image)
             sizer.Add(chkb_show_overlay)
             self.SetSizer(sizer)
         

@@ -95,7 +95,10 @@ class MyFrame(wx.Frame):
         self.update_plot()
         
     def update_plot(self):
-        self.image.draw(self.data.getCurrent())
+        if self.controls['DisplayControls.cmb_select_base_image'] == 'Current':
+            self.image.draw(self.data.getCurrent())
+        else:
+            self.image.draw(self.data.getOriginal())
         if self.controls['DisplayControls.chkb_show_overlay']:
             self.image.overlayImage(self.data.getMaximaImage())
         
