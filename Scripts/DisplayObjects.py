@@ -9,17 +9,18 @@ class ControlPanel(GenericControlPanel):
         GenericControlPanel.__init__(self,parent,name)
 
         
-        flt = BoundSpinCtrl(self,-1,'Filter',0,10,0)
-        self.Bind(wx.EVT_SPINCTRL,self.on_update_spin)
+        flt = BoundSpinCtrl(self,-1,'filter','Filter',0,10,0)
+        #min_cone_size = BoundSpinCtrl(self,-1,'min_cone_size','Minimum cone size',0,10,0)
 
+        self.Bind(wx.EVT_SPINCTRL,self._stateChange)
+        self._addControl(flt)
+        
         sizer=wx.GridBagSizer()
         sizer.Add(flt, pos=(0,0))
         #sizer.Add(pnl_disp, pos=(1,0))
         
         self.SetSizer(sizer)
     
-    def on_update_spin(self,event):
-        event.Skip()
 
 class DisplayPanel(GenericControlPanel):
         """A panel containing controls for displaying the image
@@ -55,13 +56,13 @@ class DisplayPanel(GenericControlPanel):
         
 class BoundSpinCtrl(wx.Panel):
     """A static text box with a spincontrol"""
-    def __init__(self,parent,ID,name,minVal,maxVal,initVal):
+    def __init__(self,parent,ID,name,label,minVal,maxVal,initVal):
         wx.Panel.__init__(self,parent,ID)
         self.value = initVal
-        self.name = name
+        self.Name = name
         
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        label = wx.StaticText(self,label=name)
+        label = wx.StaticText(self,label=label)
         self.sc = wx.SpinCtrl(self,value=str(initVal))
         self.sc.SetRange(minVal,maxVal)
         self.Bind(wx.EVT_SPINCTRL,self.on_update_spin)
@@ -78,8 +79,8 @@ class BoundSpinCtrl(wx.Panel):
         #logger.debug('Caught spin event at bound control')
         event.Skip()
         
-    def getValue(self):
+    def GetValue(self):
         return self.value
     
-    def getName(self):
+    def GetName(self):
         return self.name

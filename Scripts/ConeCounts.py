@@ -26,11 +26,16 @@ class MyFrame(wx.Frame):
        
         pnlControls = wx.Panel(self)       
         
-        controls = DisplayObjects.ControlPanel(pnlControls,'ProcessingControls') # the control buttons
+        processControls = DisplayObjects.ControlPanel(pnlControls,'ProcessControls') # the control buttons
         displayControls = DisplayObjects.DisplayPanel(pnlControls,'DisplayControls')
-        self.registerControl('DisplayControls',displayControls.registerControls())
         
-        self.Bind(wx.EVT_SPINCTRL,self.on_update_spin)
+        logger.debug('registering: %s',displayControls.registerControls())
+        logger.debug('registering: %s',processControls.registerControls())        
+        
+        self.registerControl('DisplayControls',displayControls.registerControls())
+        self.registerControl('ProcessControls',processControls.registerControls())
+                             
+        processControls.Bind(DisplayObjects.GenericControlPanel.EVT_STATE_CHANGE,self.on_control_change)
         displayControls.Bind(DisplayObjects.GenericControlPanel.EVT_STATE_CHANGE,self.on_control_change)
         self.CreateStatusBar() # A Statusbar in the bottom of the window
         
@@ -56,7 +61,7 @@ class MyFrame(wx.Frame):
         #create an panel to hold the control dialogs
          
         pnlControls_sizer = wx.BoxSizer(wx.VERTICAL)
-        pnlControls_sizer.Add(controls,flag=wx.EXPAND)
+        pnlControls_sizer.Add(processControls,flag=wx.EXPAND)
         pnlControls_sizer.Add(displayControls,flag=wx.EXPAND)
         pnlControls.SetSizer(pnlControls_sizer)
         
@@ -84,17 +89,19 @@ class MyFrame(wx.Frame):
         for key in myControls.keys():
             self.controls[control + '.' + key] = myControls[key]
         
-    def on_update_spin(self,event):
-        logger.debug('Caught spin event at main panel, with value %s',event.GetEventObject().getName())
-        srcObj = event.GetEventObject()
-        if srcObj.getName() == 'Filter':
-            self.data.setFilter(srcObj.getValue())
-        else:
-            logger.warning('Unhandled event')
+    #def on_update_spin(self,event):
+        #logger.debug('Caught spin event at main panel, with value %s',event.GetEventObject().getName())
+        #srcObj = event.GetEventObject()
+        #if srcObj.getName() == 'Filter':
+            #self.data.setFilter(srcObj.getValue())
+        #else:
+            #logger.warning('Unhandled event')
             
-        self.update_plot()
+        #self.update_plot()
         
     def update_plot(self):
+        self.data.setFilter(self.controls['ProcessControls.filter'])
+                            
         if self.controls['DisplayControls.cmb_select_base_image'] == 'Current':
             self.image.draw(self.data.getCurrent())
         else:
