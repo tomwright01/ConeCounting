@@ -28,9 +28,7 @@ class MyFrame(wx.Frame):
         
         processControls = DisplayObjects.ControlPanel(pnlControls,'ProcessControls') # the control buttons
         displayControls = DisplayObjects.DisplayPanel(pnlControls,'DisplayControls')
-        
-        logger.debug('registering: %s',displayControls.registerControls())
-        logger.debug('registering: %s',processControls.registerControls())        
+         
         
         self.registerControl('DisplayControls',displayControls.registerControls())
         self.registerControl('ProcessControls',processControls.registerControls())
@@ -101,7 +99,9 @@ class MyFrame(wx.Frame):
         
     def update_plot(self):
         self.data.setFilter(self.controls['ProcessControls.filter'])
-                            
+        self.data.setMinConeSize(self.controls['ProcessControls.min_cone_size'])
+        self.data.setDisplayConeSize(self.controls['DisplayControls.display_cone_size'])
+        
         if self.controls['DisplayControls.cmb_select_base_image'] == 'Current':
             self.image.draw(self.data.getCurrent())
         else:

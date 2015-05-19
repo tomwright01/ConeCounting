@@ -10,14 +10,15 @@ class ControlPanel(GenericControlPanel):
 
         
         flt = BoundSpinCtrl(self,-1,'filter','Filter',0,10,0)
-        #min_cone_size = BoundSpinCtrl(self,-1,'min_cone_size','Minimum cone size',0,10,0)
+        min_cone_size = BoundSpinCtrl(self,-1,'min_cone_size','Minimum cone size',0,10,0)
 
         self.Bind(wx.EVT_SPINCTRL,self._stateChange)
         self._addControl(flt)
+        self._addControl(min_cone_size)
         
-        sizer=wx.GridBagSizer()
-        sizer.Add(flt, pos=(0,0))
-        #sizer.Add(pnl_disp, pos=(1,0))
+        sizer=wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(flt, flag=wx.ALIGN_RIGHT)
+        sizer.Add(min_cone_size, flag=wx.ALIGN_RIGHT)
         
         self.SetSizer(sizer)
     
@@ -35,17 +36,22 @@ class DisplayPanel(GenericControlPanel):
                                                 style=wx.CB_READONLY,
                                                 name='cmb_select_base_image')
             
-            
+            display_cone_size = BoundSpinCtrl(self, -1, 'display_cone_size', 'Marker Size', 1, 
+                                             10, 
+                                             1)
             self.Bind(wx.EVT_CHECKBOX,self._stateChange)
             self.Bind(wx.EVT_COMBOBOX,self._stateChange)
+            self.Bind(wx.EVT_SPINCTRL,self._stateChange)
             
             self.Bind(GenericControlPanel.EVT_STATE_CHANGE,self.on_state_change)
             
             self._addControl(chkb_show_overlay)
             self._addControl(cmb_select_base_image)
+            self._addControl(display_cone_size)    
             
             sizer.Add(cmb_select_base_image)
             sizer.Add(chkb_show_overlay)
+            sizer.Add(display_cone_size)
             self.SetSizer(sizer)
         
         def on_state_change(self,event):
@@ -64,6 +70,7 @@ class BoundSpinCtrl(wx.Panel):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         label = wx.StaticText(self,label=label)
         self.sc = wx.SpinCtrl(self,value=str(initVal))
+
         self.sc.SetRange(minVal,maxVal)
         self.Bind(wx.EVT_SPINCTRL,self.on_update_spin)
         
