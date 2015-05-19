@@ -1,4 +1,5 @@
 import wx
+import wx.lib.newevent
 import numpy as np
 import logging
 import matplotlib
@@ -14,6 +15,8 @@ class CanvasPanel(wx.Panel):
     """This is a wx.panel that will hold a matplotlib canvas"""
     callbacks={}
     axis_limits=None
+
+    evtAxesChange, EVT_AXES_CHANGE = wx.lib.newevent.NewEvent()
     
     def __init__(self,parent):
         wx.Panel.__init__(self,parent)
@@ -34,9 +37,15 @@ class CanvasPanel(wx.Panel):
         sizer.Add(toolbar)
         self.SetSizer(sizer)
 
+    def _axesChange(self,evt):
+        logger.debug('Axes change event detected')
+        newEvt = self.evtAxesChange()
+        wx.PostEvent(self,newEvt)
+        
     def on_axes_changed(self,event):
         logger.debug('axes change fired')
         self.axis_limits = self.axes.axis()
+        self._axesChange(event)
         
     def on_canvas_click(self,event):
         logger.debug('Click caught')
@@ -63,6 +72,11 @@ class CanvasPanel(wx.Panel):
         self.axes.imshow(image)
         self.canvas.draw()
 
-    def getAxesLimits(self):
+    def GetAxesLimits(self):
         """Get the current limits of the axes"""
-
+        return self.axis_limits
+    
+    def SetAxesLimits(self,value):
+        """Set the current limits of the axes
+        value = (xmin,xmax,ymax,ymin)"""
+        self.axis_limits = value

@@ -6,6 +6,7 @@ import logging
 import AOImage
 import CanvasPanel
 import DisplayObjects
+import FileControl
                 
 class MyFrame(wx.Frame):
     """This will be the main window, Subpanels that are children of this frame
@@ -26,15 +27,18 @@ class MyFrame(wx.Frame):
        
         pnlControls = wx.Panel(self)       
         
-        processControls = DisplayObjects.ControlPanel(pnlControls,'ProcessControls') # the control buttons
-        displayControls = DisplayObjects.DisplayPanel(pnlControls,'DisplayControls')
-         
+        processControls = DisplayObjects.ControlPanel(pnlControls, 'ProcessControls') # the control buttons
+        displayControls = DisplayObjects.DisplayPanel(pnlControls, 'DisplayControls')
+        fileControls = FileControl.FileControl(pnlControls)
+        self.resultsControls = DisplayObjects.ResultsPanel(pnlControls, 'ResultsControls') 
         
         self.registerControl('DisplayControls',displayControls.registerControls())
         self.registerControl('ProcessControls',processControls.registerControls())
                              
         processControls.Bind(DisplayObjects.GenericControlPanel.EVT_STATE_CHANGE,self.on_control_change)
         displayControls.Bind(DisplayObjects.GenericControlPanel.EVT_STATE_CHANGE,self.on_control_change)
+        
+        self.image.Bind(CanvasPanel.CanvasPanel.EVT_AXES_CHANGE, self.on_axes_change)
         self.CreateStatusBar() # A Statusbar in the bottom of the window
         
         # Setting up the menu
@@ -59,8 +63,11 @@ class MyFrame(wx.Frame):
         #create an panel to hold the control dialogs
          
         pnlControls_sizer = wx.BoxSizer(wx.VERTICAL)
-        pnlControls_sizer.Add(processControls,flag=wx.EXPAND)
-        pnlControls_sizer.Add(displayControls,flag=wx.EXPAND)
+        pnlControls_sizer.Add(processControls)
+        pnlControls_sizer.Add(displayControls)
+        pnlControls_sizer.Add(self.resultsControls)
+        pnlControls_sizer.Add(fileControls)
+        
         pnlControls.SetSizer(pnlControls_sizer)
         
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -74,6 +81,11 @@ class MyFrame(wx.Frame):
         
         self.Show(True)
         self.update_plot()
+        
+    def on_axes_change(self,event):
+        logger.debug('Axes change event detected')
+        nCones = self.data.GetConeCounts(self.image.GetAxesLimits())
+        self.resultsControls.updateConeCounts(nCones)
         
     def on_control_change(self,evt):
         #catches a EVT_STATE_CHANGE and updates the controls dictionary with info from the event
@@ -101,13 +113,17 @@ class MyFrame(wx.Frame):
         self.data.setFilter(self.controls['ProcessControls.filter'])
         self.data.setMinConeSize(self.controls['ProcessControls.min_cone_size'])
         self.data.setDisplayConeSize(self.controls['DisplayControls.display_cone_size'])
-        
+
         if self.controls['DisplayControls.cmb_select_base_image'] == 'Current':
             self.image.draw(self.data.getCurrent())
         else:
             self.image.draw(self.data.getOriginal())
+
         if self.controls['DisplayControls.chkb_show_overlay']:
             self.image.overlayImage(self.data.getMaximaImage())
+
+        nCones = self.data.GetConeCounts(self.image.GetAxesLimits())
+        self.resultsControls.updateConeCounts(nCones)
         
     def onAbout(self, event):
         """callback for menuitem_about"""
@@ -126,11 +142,12 @@ class MyFrame(wx.Frame):
         if dlg.ShowModal() == wx.ID_OK:
             self.filename = dlg.GetFilename()
             self.dirname = dlg.GetDirectory()
-            #f = open(os.path.join(self.dirname, self.filename), 'r')
-            #self.control.SetValue(f.read())
-            #f.close()
+
         dlg.Destroy()
+        self.data.__init__()
         self.data.loadFrame(os.path.join(self.dirname,self.filename))
+        
+        self.image.SetAxesLimits(self.data.GetImageSize())
         self.update_plot()
         
         

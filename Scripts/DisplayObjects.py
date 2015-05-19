@@ -91,3 +91,27 @@ class BoundSpinCtrl(wx.Panel):
     
     def GetName(self):
         return self.name
+
+
+class ResultsPanel(wx.Panel):
+    """Class for displaying the results"""
+    def __init__(self,parent,name):
+        wx.Panel.__init__(self,parent)
+        self.name=name
+        self.myControls = {}
+        
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        
+        self.lbl_ncones_total = wx.StaticText(self,label='Total cones: None')
+        self.lbl_ncones_region = wx.StaticText(self,label='Region cones: None')
+        
+        sizer.Add(self.lbl_ncones_total)
+        sizer.Add(self.lbl_ncones_region)
+        
+        self.SetSizer(sizer)
+        
+    def updateConeCounts(self,value):
+        """Update hte text displayed in the cone count labels
+        value = (totalCount,regionCount)"""
+        self.lbl_ncones_total.SetLabel('Total cones: {}'.format(value[0]))
+        self.lbl_ncones_region.SetLabel('Region cones: {}'.format(value[1]))
