@@ -3,6 +3,9 @@ import numbers
 import wx
 import os
 import csv
+import distutils
+import random
+
 logger = logging.getLogger('ConeCounter.FileObjects')
 
 class AOFileList():
@@ -20,25 +23,38 @@ class AOFileList():
             raise TypeError()
         self._register.append(obj)
         
+       
     def add(self,*args,**kwargs):
         newFile = AOFile(*args,**kwargs)
         self.append(newFile)
 
     def next(self):
-        if self._curobj < len(self._register):
-            obj = self._register[self._curobj]
-            self._curobj = self._curobj + 1
-            return obj
-        else:
+        if self._curobj > len(self._register)-1:
             self.moveFirst()
             raise StopIteration
+        else:
+            self._curobj = self._curobj + 1
+            obj = self._register[self._curobj -1 ]
+            
+            return obj
+
+    def GetRandomIncomplete(self):
+        #selects a random incomplete image
+        if len(self.GetIncomplete())<1:
+            raise StopIteration
+        self._curobj = random.choice(self.GetIncomplete()) + 1
+        return self.GetCurrent()
+        
 
     def __getitem__(self,item):
         return self._register[item]
 
+    def GetCurrent(self):
+        return self._register[self._curobj -1]
+    
     def GetIncomplete(self):
         #returns the index of incomplete records
-        return [i for i,val in enumerate(self) if not val.complete]
+        return [i for i,val in enumerate(self._register) if not val.complete]
     
     def moveFirst(self):
         self._curobj = 0
@@ -48,36 +64,60 @@ class AOFileList():
         
     def Save(self,parent,fname=None):
         if fname is None:
-
-            dlg = wx.FileDialog(parent,"Select target",".","imagelist.csv","",wx.FD_OVERWRITE_PROMPT)
+            dlg = wx.FileDialog(parent,"Select target","","imagelist.csv","",wx.FD_SAVE|wx.FD_OVERWRITE_PROMPT)
             if dlg.ShowModal() == wx.ID_OK:
                 fname = os.path.join(dlg.GetDirectory(),
                                      dlg.GetFilename())
             dlg.Destroy()
-            csvfile = open(fname,'wb')
-            myWriter = csv.writer(csvfile, delimiter = ',',
-                                  quotechar = '"', quoting = csv.QUOTE_MINIMAL)
-            myWriter.writerow('Filename',
-                              'TotalCones',
-                              'RegionCones',
-                              'Region',
-                              'Notes',
-                              'Complete')
-            for obj in self:
-                myWriter.writerow(obj.filename,
-                                  obj.totalcones,
-                                  obj.regioncones,
-                                  obj.region,
-                                  obj.notes,
-                                  obj.complete)
-            csvfile.close()
+        csvfile = open(fname,'wb')
+        myWriter = csv.writer(csvfile, delimiter = ',',
+                              quotechar = '"', quoting = csv.QUOTE_MINIMAL)
+        myWriter.writerow(['filename',
+                          'totalcones',
+                          'regioncones',
+                          'region',
+                          'filtersize',
+                          'conesize',
+                          'notes',
+                          'complete'])
+        for obj in self._register:
+            myWriter.writerow([obj.filename,
+                              obj.totalcones,
+                              obj.regioncones,
+                              obj.region,
+                              obj.filtersize,
+                              obj.conesize,
+                              obj.notes,
+                              obj.complete])
+        csvfile.close()
+        
+        
+        
+        
+    def Load(self,parent,fname=None):
+        if fname is None:
+            dlg = wx.FileDialog(parent,"Select file...","","imagelist.csv","")
+            if dlg.ShowModal() == wx.ID_OK:
+                fname = os.path.join(dlg.GetDirectory(),
+                                     dlg.GetFilename())
+                dlg.Destroy()
+            else:
+                raise Exception("This isn't handled yet")
+            
+        csvfile = open(fname,'rb')
+        myReader = csv.DictReader(csvfile, delimiter = ',',
+                              quotechar = '"', quoting = csv.QUOTE_MINIMAL)
+        for row in myReader:
+            self.add(**row)
+                    
+
             
     def __iter__(self):
         return self
 
 class AOFile():
     'Information on an AOfile'
-    def __init__(self,**kwargs):
+    def __init__(self,*args,**kwargs):
         
         if 'filename' in kwargs:
             self.filename = kwargs['filename']
@@ -100,9 +140,17 @@ class AOFile():
         else:
             self.notes = None
         if 'complete' in kwargs:
-            self.complete = kwargs['complete']
+            self.complete = bool(distutils.util.strtobool(kwargs['complete']))
         else:
             self.complete = False
+        if 'conesize' in kwargs:
+            self.conesize = kwargs['conesize']
+        else:
+            self.conesize = None
+        if 'filtersize' in kwargs:
+            self.filtersize = kwargs['filtersize']
+        else:
+            self.filtersize = None
 
     def SetFilename(self,filename):
         self._filename=filename
@@ -158,7 +206,21 @@ class AOFile():
         self._complete = val
         
     def GetComplete(self):
-        return self.complete
+        return self._complete
+    
+    def SetFiltersize(self,val):
+        if not isinstance(val,int):
+            val = int(val)
+        self._filtersize = val
+        
+    def GetFiltersize(self):
+        return self._filtersize
+    
+    def SetConesize(self,val):
+        self._conesize = val
+        
+    def GetConesize(self):
+        return self._conesize
     
     def __repr__(self):
         return '{0},{1},{2},{3},{4},{5}'.format(self.filename,
@@ -173,6 +235,8 @@ class AOFile():
     regioncones = property(fget=GetRegionCones, fset=SetRegionCones)
     region = property(fget=GetRegion, fset=SetRegion)    
     notes = property(fget=GetNotes, fset=SetNotes)
+    filtersize = property(fget=GetFiltersize, fset=SetFiltersize)
+    conesize = property(fget=GetConesize, fset=SetConesize)
     complete = property(fget=GetComplete, fset=SetComplete)
     
     

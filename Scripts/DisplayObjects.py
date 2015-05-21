@@ -5,8 +5,8 @@ logger = logging.getLogger('ConeCounter.DisplayObjects')
 
 class ControlPanel(GenericControlPanel):
     """A wx.panel to hold the main gui controls"""
-    def __init__(self,parent,name):
-        GenericControlPanel.__init__(self,parent,name)
+    def __init__(self,*args,**kwargs):
+        GenericControlPanel.__init__(self,*args,**kwargs)
 
         
         flt = BoundSpinCtrl(self,-1,'filter','Filter',0,10,0)
@@ -26,8 +26,8 @@ class ControlPanel(GenericControlPanel):
 class DisplayPanel(GenericControlPanel):
         """A panel containing controls for displaying the image
         """
-        def __init__(self,parent,name):
-            GenericControlPanel.__init__(self,parent,name)
+        def __init__(self,*args,**kwargs):
+            GenericControlPanel.__init__(self,*args,**kwargs)
             sizer = wx.BoxSizer(wx.VERTICAL)
             
             chkb_show_overlay = wx.CheckBox(self,-1,'Show overlay',name='chkb_show_overlay')
@@ -92,12 +92,18 @@ class BoundSpinCtrl(wx.Panel):
     def GetName(self):
         return self.name
 
-
+    def SetValue(self,value):
+        self.sc.SetValue(value)
+        
 class ResultsPanel(wx.Panel):
     """Class for displaying the results"""
-    def __init__(self,parent,name):
-        wx.Panel.__init__(self,parent)
-        self.name=name
+    def __init__(self,*args,**kwargs):
+        wx.Panel.__init__(self,*args,**kwargs)
+        if 'name' in kwargs:
+            self.name=kwargs['name']
+        else:
+            self.name=''
+            
         self.myControls = {}
         
         sizer = wx.BoxSizer(wx.VERTICAL)

@@ -14,9 +14,12 @@ class GenericControlPanel(wx.Panel):
    
     evtStateChange, EVT_STATE_CHANGE = wx.lib.newevent.NewEvent()
     
-    def __init__(self,parent,name):
-        wx.Panel.__init__(self,parent)
-        self.name=name
+    def __init__(self,*args,**kwargs):
+        wx.Panel.__init__(self,*args,**kwargs)
+        if 'name' in kwargs:
+            self.name=kwargs['name']
+        else:
+            self.name=''
         self.myControls = {}
         
     def _stateChange(self,evt):

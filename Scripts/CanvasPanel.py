@@ -18,8 +18,8 @@ class CanvasPanel(wx.Panel):
 
     evtAxesChange, EVT_AXES_CHANGE = wx.lib.newevent.NewEvent()
     
-    def __init__(self,parent):
-        wx.Panel.__init__(self,parent)
+    def __init__(self,*args,**kwargs):
+        wx.Panel.__init__(self,*args,**kwargs)
         #Setup the drawing surface
         self.figure = Figure()
         self.axes = self.figure.add_subplot(111)
@@ -38,12 +38,12 @@ class CanvasPanel(wx.Panel):
         self.SetSizer(sizer)
 
     def _axesChange(self,evt):
-        logger.debug('Axes change event detected')
+        #logger.debug('Axes change event detected')
         newEvt = self.evtAxesChange()
         wx.PostEvent(self,newEvt)
         
     def on_axes_changed(self,event):
-        logger.debug('axes change fired')
+        #logger.debug('axes change fired')
         self.axis_limits = self.axes.axis()
         self._axesChange(event)
         
