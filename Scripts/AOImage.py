@@ -183,7 +183,8 @@ class AOImage():
             raise IOError
         
         image = mh.imread(fname)
-        image = image[:,:,0]
+        if len(image.shape) > 2:
+            image = image[:,:,0]
         if image.size == 1:
             #There are problems with some greyscale png images
             logger.error('Invalid image: %s provided: is it grayscale png?',fname)
