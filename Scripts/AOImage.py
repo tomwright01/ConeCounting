@@ -203,6 +203,7 @@ class AOImage():
             #Some regional maxima are not points
             #this is a slow function, only required for display
             self._filterMaxima()
+            #pass
         
         newImg = np.zeros(self.ConeCounts.Seeds.shape + (4,),dtype=np.uint8)   #create a new array of size orgImage but 4D
         newImg[:,:,1] = self.ConeCounts.Seeds > 0
@@ -215,6 +216,8 @@ class AOImage():
     def _filterMaxima(self):
         #replace seeds that are larger than one pixel with the center of mass
         frequencies = scipy.stats.itemfreq(self.ConeCounts.Seeds)
+        if frequencies.shape[0]>5000:
+            return
         frequencies = frequencies[frequencies[:,0]>0,:] #remove the 0 values
         frequencies = frequencies[frequencies[:,1]>1,:] #isolate only values with counts >1
         seeds = self.ConeCounts.Seeds
