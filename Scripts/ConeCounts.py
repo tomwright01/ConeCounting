@@ -151,8 +151,11 @@ class MyFrame(wx.Frame):
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetFilename()
             dirname = dlg.GetDirectory()
-            self._loadImage(os.path.join(dirname,filename))
+            #self._loadImage(os.path.join(dirname,filename))
         dlg.Destroy()
+        self.FileList = AOFileObjects.AOFileList()
+        self._loadImage(os.path.join(dirname,filename))
+        self._displayImage()
         
     def onLoadProgress(self, event):
         """Load a progress file and use contents to initialise AOFileList"""

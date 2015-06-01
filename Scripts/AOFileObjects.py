@@ -13,7 +13,7 @@ class AOFileList():
     
     def __init__(self,*args):
         self._register = []
-        self._curobj = 0
+        self._curobj = 1
         
         for obj in args:
             self.append(obj)
